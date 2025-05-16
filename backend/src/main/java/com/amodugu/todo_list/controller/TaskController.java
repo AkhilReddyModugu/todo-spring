@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tasks")
-@CrossOrigin(origins = "http://localhost:3000") // Enable CORS for React
+@CrossOrigin(origins = "http://localhost:5173") // Enable CORS for React
 public class TaskController {
 
     @Autowired
