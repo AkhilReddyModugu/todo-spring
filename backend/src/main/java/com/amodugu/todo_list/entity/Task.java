@@ -24,4 +24,9 @@ public class Task {
     private boolean completed = false;
 
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
