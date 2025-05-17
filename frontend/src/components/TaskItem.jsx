@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { deleteTask, updateTask } from '../services/taskService';
 
 const TaskItem = ({ task, refreshTasks }) => {
+  const [editMode, setEditMode] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(task.title);
+  const [editedDescription, setEditedDescription] = useState(task.description);
 
   const formattedDate = new Date(task.createdAt).toLocaleString(undefined, {
     year: 'numeric',
@@ -13,10 +16,16 @@ const TaskItem = ({ task, refreshTasks }) => {
     minute: '2-digit',
   });
 
-  const toggleComplete = async () => {
+  const handleUpdate = async () => {
+    if (!editedTitle.trim() || !editedDescription.trim()) return;
     setUpdating(true);
     try {
-      await updateTask(task.id, { ...task, completed: !task.completed });
+      await updateTask(task.id, {
+        ...task,
+        title: editedTitle,
+        description: editedDescription,
+      });
+      setEditMode(false);
       refreshTasks();
     } catch (error) {
       console.error('Error updating task:', error);
@@ -38,35 +47,101 @@ const TaskItem = ({ task, refreshTasks }) => {
     }
   };
 
+  const toggleCompleted = async () => {
+    try {
+      await updateTask(task.id, { ...task, completed: !task.completed });
+      refreshTasks();
+    } catch (error) {
+      console.error('Error toggling task status:', error);
+    }
+  };
+
   return (
-    <li
-      className={`list-group-item rounded shadow-sm mb-3 ${
-        task.completed ? 'bg-light text-decoration-line-through text-muted' : ''
-      }`}
-      aria-label={`Task: ${task.title}`}
-    >
-      <div
-        onClick={toggleComplete}
-        role="checkbox"
-        tabIndex={0}
-        onKeyPress={(e) => e.key === 'Enter' && toggleComplete()}
-        aria-checked={task.completed}
-        className={`d-flex flex-column cursor-pointer ${updating ? 'opacity-50' : ''}`}
-        style={{ userSelect: 'none' }}
-      >
-        <h5 className="mb-1">{task.title}</h5>
-        <p className="mb-2" style={{ whiteSpace: 'pre-wrap' }}>{task.description}</p>
-      </div>
-      <div className="d-flex justify-content-between align-items-center mt-2">
-        <small className="text-muted fst-italic">Created: {formattedDate}</small>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          aria-label={`Delete task: ${task.title}`}
-          className="btn btn-sm btn-outline-danger"
-        >
-          {deleting ? 'Deleting...' : 'Delete'}
-        </button>
+    <li className="card mb-3 shadow-sm">
+      <div className="card-body">
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            checked={task.completed}
+            onChange={toggleCompleted}
+            disabled={editMode}
+            id={`task-check-${task.id}`}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`task-check-${task.id}`}
+          >
+            {editMode ? (
+              <input
+                type="text"
+                className="form-control mt-2"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                disabled={updating}
+              />
+            ) : (
+              <span
+                className={`ms-2 ${task.completed ? 'text-decoration-line-through text-muted' : ''}`}
+              >
+                {task.title}
+              </span>
+            )}
+          </label>
+        </div>
+
+        {editMode ? (
+          <textarea
+            className="form-control mb-2"
+            rows={3}
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            disabled={updating}
+          />
+        ) : (
+          <p className={`card-text ${task.completed ? 'text-muted' : ''}`}>
+            {task.description}
+          </p>
+        )}
+
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small className="text-muted">Created: {formattedDate}</small>
+          <div>
+            {editMode ? (
+              <>
+                <button
+                  className="btn btn-sm btn-success me-2"
+                  onClick={handleUpdate}
+                  disabled={updating}
+                >
+                  {updating ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setEditMode(false)}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn btn-sm btn-primary me-2"
+                  onClick={() => setEditMode(true)}
+                >
+                  Update
+                </button>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </li>
   );
